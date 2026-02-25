@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RD • Puntos Cardinales por Regiones (Animado)</title>
+  <style>
+    :root{
+      --bg0:#070b16;
+      --bg1:#0b1630;
+      --card: rgba(255,255,255,.06);
+      --stroke: rgba(255,255,255,.14);
+      --text: rgba(250,252,255,.92);
+      --muted: rgba(250,252,255,.70);
+      --accent:#5eead4;
+      --accent2:#60a5fa;
+      --danger:#fb7185;
+      --ok:#34d399;
+      --shadow: 0 18px 44px rgba(0,0,0,.45);
+      --r: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    }
+
+    *{ box-sizing: border-box; }
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 700px at 20% 20%, rgba(96,165,250,.18), transparent 60%),
+        radial-gradient(900px 600px at 85% 30%, rgba(94,234,212,.14), transparent 58%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+      min-height:100vh;
+    }
+
+    /* ===== Animated background layers (moving "images") ===== */
+    .bg{
+      position: fixed;
+      inset: 0;
+      pointer-events:none;
+      overflow:hidden;
+      z-index: -1;
+    }
+    .layer{
+      position:absolute;
+      inset:-20%;
+      background-repeat: repeat;
+      opacity:.35;
+      filter: blur(.2px);
+      transform: translateZ(0);
+    }
+    /* Clouds (inline SVG pattern as background-image) */
+    .clouds{
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='140' viewBox='0 0 240 140'%3E%3Cg fill='white' fill-opacity='0.28'%3E%3Cpath d='M72 88c-12 0-22-9-22-20s10-20 22-20c3 0 6 .6 9 1.7C86 40 98 32 112 32c18 0 32 12 35 28 2-.5 4-.8 6-.8 12 0 22 9 22 20s-10 20-22 20H72z'/%3E%3Cpath d='M18 118c-8 0-14-6-14-13s6-13 14-13c2 0 4 .4 6 1.1 3-8 10-14 20-14 11 0 20 7 22 17 1-.3 2-.4 4-.4 8 0 14 6 14 13s-6 13-14 13H18z'/%3E%3C/g%3E%3C/svg%3E");
+      animation: drift 34s linear infinite;
+      opacity:.28;
+    }
+    /* Waves */
+    .waves{
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='90' viewBox='0 0 260 90'%3E%3Cg fill='none' stroke='white' stroke-opacity='0.25' stroke-width='3'%3E%3Cpath d='M0 30c20 0 20-14 40-14s20 14 40 14 20-14 40-14 20 14 40 14 20-14 40-14 20 14 40 14 20-14 40-14'/%3E%3Cpath d='M0 60c20 0 20-14 40-14s20 14 40 14 20-14 40-14 20 14 40 14 20-14 40-14 20 14 40 14 20-14 40-14'/%3E%3C/g%3E%3C/svg%3E");
+      animation: drift2 22s linear infinite;
+      opacity:.18;
+      top: 45%;
+    }
+    /* Floating particles */
+    .dots{
+      background-image: radial-gradient(rgba(255,255,255,.18) 1px, transparent 1px);
+      background-size: 44px 44px;
+      animation: floaty 18s ease-in-out infinite;
+      opacity:.12;
+    }
+
+    @keyframes drift{
+      from{ transform: translateX(0); }
+      to{ transform: translateX(-240px); }
+    }
+    @keyframes drift2{
+      from{ transform: translateX(0) translateY(0); }
+      to{ transform: translateX(-260px) translateY(6px); }
+    }
+    @keyframes floaty{
+      0%,100%{ transform: translateY(0); }
+      50%{ transform: translateY(-18px); }
+    }
+
+    /* ===== Layout ===== */
+    header{
+      max-width: 1150px;
+      margin: 0 auto;
+      padding: 22px 18px 10px;
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .brand{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+    }
+    .badge{
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 6px 10px;
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+      white-space: nowrap;
+    }
+    h1{
+      margin:0;
+      font-size: 22px;
+      letter-spacing:.2px;
+      line-height:1.2;
+    }
+    .sub{
+      margin: 6px 0 0;
+      max-width: 80ch;
+      color: var(--muted);
+      line-height: 1.35;
+      font-size: 14px;
+    }
+
+    .toolbar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .toggle{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-weight:700;
+      user-select:none;
+      transition: transform .06s ease, border-color .15s ease, background .15s ease;
+    }
+    .toggle:active{ transform: translateY(1px); }
+    .toggle:hover{
+      border-color: rgba(255,255,255,.22);
+      background: rgba(255,255,255,.06);
+    }
+
+    main{
+      max-width: 1150px;
+      margin: 0 auto;
+      padding: 10px 18px 28px;
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 980px){
+      main{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(10px);
+    }
+    .hd{
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--stroke);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), transparent);
+    }
+    .hd h2{
+      margin:0;
+      font-size: 15px;
+      letter-spacing:.2px;
+    }
+    .bd{ padding: 14px; }
+
+    /* ===== Region buttons ===== */
+    .regions{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    button{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight:800;
+      transition: transform .06s ease, border-color .15s ease, background .15s ease;
+      user-select:none;
+    }
+    button:hover{ border-color: rgba(255,255,255,.24); background: rgba(255,255,255,.06); }
+    button:active{ transform: translateY(1px); }
+    button.primary{ border-color: rgba(94,234,212,.55); background: rgba(94,234,212,.10); }
+    button.secondary{ border-color: rgba(96,165,250,.55); background: rgba(96,165,250,.10); }
+
+    /* ===== Animated RD silhouette + directional glow ===== */
+    .stage{
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 980px){
+      .stage{ grid-template-columns: 1fr; }
+    }
+
+    .mapWrap{
+      position: relative;
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(0,0,0,.14);
+      overflow:hidden;
+    }
+    .mapTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom: 8px;
+      flex-wrap:wrap;
+    }
+    .pill{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      color: var(--muted);
+      font-size: 12px;
+      background: rgba(255,255,255,.03);
+    }
+
+    /* animated "spotlight" that moves on selection */
+    .spot{
+      position:absolute;
+      width: 260px;
+      height: 260px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 40% 35%, rgba(94,234,212,.30), transparent 60%),
+                  radial-gradient(circle at 60% 55%, rgba(96,165,250,.22), transparent 62%);
+      filter: blur(2px);
+      opacity:.9;
+      transform: translate(-50%,-50%);
+      transition: left .55s cubic-bezier(.2,.8,.2,1), top .55s cubic-bezier(.2,.8,.2,1);
+      mix-blend-mode: screen;
+      pointer-events:none;
+    }
+
+    /* RD silhouette as inline SVG "image" */
+    .rdSvg{
+      width: 100%;
+      max-height: 260px;
+      display:block;
+      margin: 4px 0 2px;
+    }
+
+    /* little animated icons over map (moving images) */
+    .icon{
+      position:absolute;
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      display:grid;
+      place-items:center;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      transform: translate(-50%,-50%);
+      transition: left .55s cubic-bezier(.2,.8,.2,1), top .55s cubic-bezier(.2,.8,.2,1);
+    }
+    .icon svg{ width: 28px; height: 28px; opacity:.92; }
+    .bounce{ animation: bob 2.6s ease-in-out infinite; }
+    @keyframes bob{
+      0%,100%{ transform: translate(-50%,-50%) translateY(0); }
+      50%{ transform: translate(-50%,-50%) translateY(-8px); }
+    }
+
+    /* ===== Info panel + entrance animation ===== */
+    .info{
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(0,0,0,.12);
+      overflow:hidden;
+      position: relative;
+    }
+    .info .title{
+      margin: 0 0 6px;
+      font-size: 16px;
+      letter-spacing:.2px;
+    }
+    .info .desc{
+      margin: 0 0 10px;
+      color: var(--muted);
+      line-height: 1.35;
+      font-size: 14px;
+    }
+    .cols{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 560px){
+      .cols{ grid-template-columns: 1fr; }
+    }
+    ul{ margin: 6px 0 0; padding: 0 0 0 18px; }
+    li{ margin: 6px 0; }
+    .hint{
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .reveal{
+      animation: slideIn .45s ease-out both;
+    }
+    @keyframes slideIn{
+      from{ opacity:0; transform: translateY(8px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+
+    /* ===== Compass (animated needle rotates by JS) ===== */
+    .compassWrap{
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(0,0,0,.12);
+    }
+    .compassRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom: 8px;
+    }
+    .compassRow .pill{ margin:0; }
+    .compass{
+      display:grid;
+      place-items:center;
+    }
+    .compass svg{ width: 280px; max-width: 100%; height:auto; display:block; }
+    .needle{
+      transform-origin: 150px 150px;
+      transition: transform .65s cubic-bezier(.2,.8,.2,1);
+    }
+    .labels text{
+      font-family: var(--mono);
+      fill: rgba(250,252,255,.90);
+    }
+    .labels .muted{
+      fill: rgba(250,252,255,.65);
+    }
+
+    /* ===== Quiz ===== */
+    .q{
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(0,0,0,.12);
+    }
+    .q p{ margin: 0 0 10px; font-weight:900; letter-spacing:.2px; }
+    .answers{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 8px;
+    }
+    .status{
+      margin-top: 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .status.ok{ color: var(--ok); }
+    .status.bad{ color: var(--danger); }
+
+    footer{
+      max-width: 1150px;
+      margin: 0 auto;
+      padding: 0 18px 28px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    kbd{
+      font-family: var(--mono);
+      border:1px solid var(--stroke);
+      border-bottom-width: 2px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+    }
+
+    /* Reduce motion */
+    @media (prefers-reduced-motion: reduce){
+      .clouds,.waves,.dots,.bounce{ animation:none !important; }
+      .needle,.spot,.icon{ transition:none !important; }
+      .reveal{ animation:none !important; }
+    }
+  </style>
+</head>
+<body>
+  <!-- animated background "images" -->
+  <div class="bg">
+    <div class="layer clouds"></div>
+    <div class="layer waves"></div>
+    <div class="layer dots"></div>
+  </div>
+
+  <header>
+    <div class="brand">
+      <span class="badge">RD · Geografía · Web App animada</span>
+      <div>
+        <h1>🧭 Puntos cardinales por regiones (República Dominicana)</h1>
+        <p class="sub">
+          Selecciona una región: la brújula rota, el “spotlight” se mueve sobre el mapa y aparecen ejemplos dominicanos.
+          Atajos: <kbd>←</kbd> <kbd>→</kbd> para cambiar región.
+        </p>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button class="toggle" id="toggleMotion">Animaciones: ON</button>
+      <button class="toggle" id="newQ">Quiz: nueva pregunta</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- LEFT -->
+    <section class="card">
+      <div class="hd">
+        <h2>Regiones y ejemplos dominicanos</h2>
+        <span class="pill" id="nowPill">Selecciona una región</span>
+      </div>
+      <div class="bd">
+        <div class="regions" id="regionBtns"></div>
+
+        <div class="stage">
+          <!-- MAP -->
+          <div class="mapWrap">
+            <div class="mapTop">
+              <span class="pill" id="dirPill">Dirección: —</span>
+              <span class="pill" id="themePill">Enfoque: —</span>
+            </div>
+
+            <div class="spot" id="spot"></div>
+
+            <!-- RD silhouette (simple stylized SVG) -->
+            <svg class="rdSvg" viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg" aria-label="Mapa estilizado de RD">
+              <defs>
+                <linearGradient id="rdg" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="rgba(96,165,250,.40)"/>
+                  <stop offset="1" stop-color="rgba(94,234,212,.28)"/>
+                </linearGradient>
+                <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2.2" result="b"/>
+                  <feMerge>
+                    <feMergeNode in="b"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+              </defs>
+
+              <!-- sea line -->
+              <path d="M20 215c90-15 120 16 220 6s120-30 220-24 120 40 220 34 120-30 180-20"
+                    fill="none" stroke="rgba(255,255,255,.10)" stroke-width="3" stroke-linecap="round"/>
+
+              <!-- stylized island -->
+              <path filter="url(#soft)"
+                    d="M70 155
+                       C120 120 190 108 250 112
+                       C310 116 350 88 410 80
+                       C470 72 520 92 570 92
+                       C620 92 650 72 700 68
+                       C760 64 820 84 850 108
+                       C880 128 870 166 840 176
+                       C805 188 770 180 730 176
+                       C690 172 650 204 600 206
+                       C550 208 520 184 470 182
+                       C420 180 390 208 330 210
+                       C270 212 250 196 210 188
+                       C165 180 120 186 90 178
+                       C58 170 48 170 70 155 Z"
+                    fill="url(#rdg)"
+                    stroke="rgba(255,255,255,.18)"
+                    stroke-width="3"
+                    stroke-linejoin="round"/>
+
+              <!-- interior ridge -->
+              <path d="M170 150c60-32 120-28 180-56 70-32 140-16 210-10 60 6 110-32 180-36"
+                    fill="none" stroke="rgba(255,255,255,.12)" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+
+            <!-- moving icons (SVG "images") -->
+            <div class="icon bounce" id="iconA" aria-hidden="true">
+              <!-- location pin -->
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 22s7-6.2 7-12.1A7 7 0 0 0 5 9.9C5 15.8 12 22 12 22z" stroke="rgba(255,255,255,.85)" stroke-width="1.6"/>
+                <circle cx="12" cy="10" r="2.6" stroke="rgba(255,255,255,.85)" stroke-width="1.6"/>
+              </svg>
+            </div>
+            <div class="icon bounce" id="iconB" aria-hidden="true" style="animation-delay:.35s;">
+              <!-- wave -->
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M2 14c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"
+                      stroke="rgba(255,255,255,.85)" stroke-width="1.6" stroke-linecap="round"/>
+                <path d="M2 18c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"
+                      stroke="rgba(255,255,255,.65)" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- INFO -->
+          <div class="info" id="infoBox">
+            <h3 class="title" id="infoTitle">Selecciona una región</h3>
+            <p class="desc" id="infoDesc">Verás direcciones, provincias/zonas ejemplo y un enfoque (turismo, frontera, clima, etc.).</p>
+            <div class="cols">
+              <div>
+                <span class="pill">🧭 Direcciones</span>
+                <ul id="infoDirs"></ul>
+              </div>
+              <div>
+                <span class="pill">🇩🇴 Ejemplos</span>
+                <ul id="infoEx"></ul>
+              </div>
+            </div>
+            <div class="hint" id="infoHint">
+              Tip docente: pide “dirección + ejemplo”. Ej.: “Este: Punta Cana (La Altagracia)”.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT -->
+    <section class="card">
+      <div class="hd">
+        <h2>Brújula animada + Quiz</h2>
+        <span class="pill" id="anglePill">Ángulo: —</span>
+      </div>
+      <div class="bd">
+        <div class="compassWrap">
+          <div class="compassRow">
+            <span class="pill">La aguja rota según la región</span>
+            <span class="pill" id="compassLabel">—</span>
+          </div>
+
+          <div class="compass">
+            <svg viewBox="0 0 300 300" role="img" aria-label="Brújula">
+              <defs>
+                <radialGradient id="cg" cx="50%" cy="45%" r="70%">
+                  <stop offset="0%" stop-color="rgba(255,255,255,.10)"/>
+                  <stop offset="100%" stop-color="rgba(255,255,255,.02)"/>
+                </radialGradient>
+              </defs>
+
+              <circle cx="150" cy="150" r="122" fill="url(#cg)" stroke="rgba(255,255,255,.16)" stroke-width="2"/>
+              <circle cx="150" cy="150" r="88" fill="transparent" stroke="rgba(255,255,255,.10)" stroke-width="1.5"/>
+
+              <g class="needle" id="needle">
+                <path d="M150 40 L166 150 L150 260 L134 150 Z"
+                      fill="rgba(96,165,250,.22)" stroke="rgba(96,165,250,.55)" stroke-width="1"/>
+                <path d="M150 40 L156 150 L150 260 L144 150 Z"
+                      fill="rgba(94,234,212,.26)" stroke="rgba(94,234,212,.65)" stroke-width="1"/>
+              </g>
+
+              <g class="labels">
+                <text x="150" y="26" text-anchor="middle">N</text>
+                <text x="150" y="290" text-anchor="middle">S</text>
+                <text x="18" y="156" text-anchor="middle">O</text>
+                <text x="282" y="156" text-anchor="middle">E</text>
+
+                <text class="muted" x="70" y="78" text-anchor="middle">NO</text>
+                <text class="muted" x="230" y="78" text-anchor="middle">NE</text>
+                <text class="muted" x="70" y="238" text-anchor="middle">SO</text>
+                <text class="muted" x="230" y="238" text-anchor="middle">SE</text>
+              </g>
+
+              <circle cx="150" cy="150" r="5" fill="rgba(255,255,255,.25)"/>
+            </svg>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="q">
+          <p id="qText">Pulsa “Quiz: nueva pregunta”</p>
+          <div class="answers" id="qAns"></div>
+          <div class="status" id="qStatus"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Puedes editar provincias/ejemplos y enfoques en el objeto <span style="font-family:var(--mono)">DATA</span>.
+    Atajos: <kbd>←</kbd> región anterior, <kbd>→</kbd> siguiente.
+  </footer>
+
+  <script>
+    // ===================== DATA (RD) =====================
+    const DATA = [
+      {
+        key:"NORTE", label:"Norte (Atlántico)", dirs:["N"], angle:0,
+        examples:["Puerto Plata","Espaillat (Moca)","María Trinidad Sánchez (Nagua)","Costa Atlántica"],
+        focus:"Océano Atlántico • turismo, puertos, clima",
+        desc:"Al norte está el Océano Atlántico. Es ideal para hablar de turismo, costas y cómo los frentes y tormentas influyen en la zona.",
+        spot:[46,34], iconA:[44,38], iconB:[58,56]
+      },
+      {
+        key:"SUR", label:"Sur (Caribe)", dirs:["S"], angle:180,
+        examples:["Santo Domingo","San Cristóbal","Peravia (Baní)","Azua","Barahona (costa sur)"],
+        focus:"Mar Caribe • ciudades, logística, huracanes",
+        desc:"En el Sur está el Mar Caribe. Perfecto para conectar población, economía y exposición a ciclones/tormentas.",
+        spot:[52,72], iconA:[55,70], iconB:[42,78]
+      },
+      {
+        key:"ESTE", label:"Este (Turismo)", dirs:["E"], angle:90,
+        examples:["La Altagracia (Punta Cana)","La Romana","El Seibo","Hato Mayor"],
+        focus:"Canal de la Mona • polos turísticos",
+        desc:"El Este concentra grandes polos turísticos. Muy útil para relacionar geografía y economía (turismo y servicios).",
+        spot:[80,58], iconA:[78,58], iconB:[68,66]
+      },
+      {
+        key:"OESTE", label:"Oeste (Frontera)", dirs:["O"], angle:-90,
+        examples:["Dajabón","Elías Piña","Independencia","Pedernales"],
+        focus:"Frontera con Haití • soberanía y comercio",
+        desc:"El Oeste es clave para hablar de frontera, comercio, pasos fronterizos y planificación territorial.",
+        spot:[16,58], iconA:[18,56], iconB:[28,70]
+      },
+      {
+        key:"NORESTE", label:"Noreste (NE)", dirs:["NE"], angle:45,
+        examples:["Samaná","Bahía de Samaná","Costa noreste"],
+        focus:"Bahías y ecosistemas • turismo y pesca",
+        desc:"El Noreste destaca por bahías, costas y ecosistemas. Excelente para turismo sostenible y recursos marinos.",
+        spot:[72,36], iconA:[70,38], iconB:[60,52]
+      },
+      {
+        key:"NOROESTE", label:"Noroeste (NO)", dirs:["NO"], angle:-45,
+        examples:["Montecristi","Valverde (Mao)","Santiago Rodríguez","Línea Noroeste"],
+        focus:"Llanuras/agricultura • conexión con frontera norte",
+        desc:"En el Noroeste se pueden trabajar llanuras, agricultura y cómo el territorio influye en producción y movilidad.",
+        spot:[28,36], iconA:[30,38], iconB:[42,52]
+      },
+      {
+        key:"SURESTE", label:"Sureste (SE)", dirs:["SE"], angle:135,
+        examples:["San Pedro de Macorís","Boca Chica","Guayacanes","La Romana (zona SE)"],
+        focus:"Costa caribeña • industria y turismo",
+        desc:"El Sureste conecta costa caribeña con industria y turismo. Útil para hablar de puertos, rutas y economía local.",
+        spot:[70,78], iconA:[70,74], iconB:[58,86]
+      },
+      {
+        key:"SUROESTE", label:"Suroeste (SO)", dirs:["SO"], angle:-135,
+        examples:["Barahona","Pedernales","Bahoruco","Lago Enriquillo (zona SO)"],
+        focus:"Relieve/clima • áreas protegidas",
+        desc:"El Suroeste permite abordar relieve, áreas protegidas y elementos únicos como el Lago Enriquillo.",
+        spot:[30,78], iconA:[28,74], iconB:[42,88]
+      },
+      {
+        key:"CENTRO", label:"Centro (Cordillera Central)", dirs:["Centro (referencia)"], angle:0,
+        examples:["La Vega","Monseñor Nouel (Bonao)","Jarabacoa","Constanza","San José de Ocoa"],
+        focus:"Montañas • ríos y microclimas",
+        desc:"El Centro (Cordillera Central) es ideal para explicar relieve, clima de montaña y nacimientos de ríos importantes.",
+        spot:[50,52], iconA:[52,54], iconB:[40,60]
+      }
+    ];
+
+    // ===================== UI refs =====================
+    const regionBtns = document.getElementById("regionBtns");
+    const nowPill = document.getElementById("nowPill");
+    const dirPill = document.getElementById("dirPill");
+    const themePill = document.getElementById("themePill");
+
+    const infoBox = document.getElementById("infoBox");
+    const infoTitle = document.getElementById("infoTitle");
+    const infoDesc  = document.getElementById("infoDesc");
+    const infoDirs  = document.getElementById("infoDirs");
+    const infoEx    = document.getElementById("infoEx");
+
+    const spot = document.getElementById("spot");
+    const iconA = document.getElementById("iconA");
+    const iconB = document.getElementById("iconB");
+
+    const needle = document.getElementById("needle");
+    const anglePill = document.getElementById("anglePill");
+    const compassLabel = document.getElementById("compassLabel");
+
+    const toggleMotion = document.getElementById("toggleMotion");
+    const newQ = document.getElementById("newQ");
+    const qText = document.getElementById("qText");
+    const qAns = document.getElementById("qAns");
+    const qStatus = document.getElementById("qStatus");
+
+    // motion layers
+    const layers = document.querySelectorAll(".layer");
+    let motionOn = true;
+
+    let idx = 0;
+
+    // ===================== helpers =====================
+    function pctToPos([x,y]){
+      // position within mapWrap: we use percentages of its box
+      return { left: x + "%", top: y + "%" };
+    }
+
+    function setMotion(on){
+      motionOn = on;
+      toggleMotion.textContent = "Animaciones: " + (on ? "ON" : "OFF");
+      layers.forEach(l => l.style.animationPlayState = on ? "running" : "paused");
+      iconA.style.animationPlayState = on ? "running" : "paused";
+      iconB.style.animationPlayState = on ? "running" : "paused";
+    }
+
+    function renderRegion(i){
+      idx = (i + DATA.length) % DATA.length;
+      const r = DATA[idx];
+
+      // pills
+      nowPill.textContent = "Región: " + r.label;
+      dirPill.textContent = "Dirección: " + r.dirs.join(", ");
+      themePill.textContent = "Enfoque: " + r.focus;
+
+      // info
+      infoTitle.textContent = "📌 " + r.label;
+      infoDesc.textContent = r.desc;
+
+      infoDirs.innerHTML = "";
+      r.dirs.forEach(d => {
+        const li = document.createElement("li");
+        li.textContent = d;
+        infoDirs.appendChild(li);
+      });
+
+      infoEx.innerHTML = "";
+      r.examples.forEach(e => {
+        const li = document.createElement("li");
+        li.textContent = e;
+        infoEx.appendChild(li);
+      });
+
+      // animate re-entry
+      infoBox.classList.remove("reveal");
+      void infoBox.offsetWidth; // reflow
+      infoBox.classList.add("reveal");
+
+      // spotlight & icons positions
+      const s = pctToPos(r.spot);
+      spot.style.left = s.left;
+      spot.style.top = s.top;
+
+      const a = pctToPos(r.iconA);
+      iconA.style.left = a.left;
+      iconA.style.top = a.top;
+
+      const b = pctToPos(r.iconB);
+      iconB.style.left = b.left;
+      iconB.style.top = b.top;
+
+      // compass needle rotation
+      // 0 = North, 90 = East, 180 = South, -90 = West, etc.
+      needle.style.transform = `rotate(${r.angle}deg)`;
+      anglePill.textContent = "Ángulo: " + r.angle + "°";
+      compassLabel.textContent = "Dirección: " + r.dirs.join(", ");
+
+      // button active styles
+      [...regionBtns.children].forEach((btn, j) => {
+        btn.classList.toggle("secondary", j === idx);
+      });
+    }
+
+    function makeButtons(){
+      DATA.forEach((r, i) => {
+        const b = document.createElement("button");
+        b.textContent = r.label;
+        if (["NORTE","SUR","ESTE","OESTE"].includes(r.key)) b.classList.add("primary");
+        b.addEventListener("click", () => renderRegion(i));
+        regionBtns.appendChild(b);
+      });
+      renderRegion(0);
+    }
+
+    // ===================== QUIZ =====================
+    const QUIZ = [
+      { q:"¿Qué dirección corresponde a Punta Cana (La Altagracia) en el país?", ok:"Este" },
+      { q:"¿Qué dirección corresponde a Puerto Plata?", ok:"Norte" },
+      { q:"La frontera con Haití (ej.: Dajabón) se ubica hacia el…", ok:"Oeste" },
+      { q:"Samaná se ubica principalmente hacia el…", ok:"Noreste" },
+      { q:"Montecristi está hacia el…", ok:"Noroeste" },
+      { q:"Barahona / Lago Enriquillo están hacia el…", ok:"Suroeste" },
+      { q:"San Pedro de Macorís se ubica hacia el…", ok:"Sureste" },
+      { q:"La Cordillera Central se asocia al…", ok:"Centro" }
+    ];
+    const OPTS = ["Norte","Sur","Este","Oeste","Noreste","Noroeste","Sureste","Suroeste","Centro"];
+
+    function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+    function newQuestion(){
+      qStatus.textContent = "";
+      qStatus.className = "status";
+      const item = pick(QUIZ);
+      qText.textContent = "🧠 " + item.q;
+      qAns.innerHTML = "";
+
+      const shuffled = [...OPTS].sort(() => Math.random() - 0.5);
+      shuffled.forEach(opt => {
+        const b = document.createElement("button");
+        b.textContent = opt;
+        b.addEventListener("click", () => {
+          if (opt === item.ok){
+            qStatus.textContent = "✅ Correcto: " + item.ok;
+            qStatus.className = "status ok";
+          } else {
+            qStatus.textContent = "❌ Incorrecto. Correcto: " + item.ok;
+            qStatus.className = "status bad";
+          }
+        });
+        qAns.appendChild(b);
+      });
+    }
+
+    // ===================== events =====================
+    toggleMotion.addEventListener("click", () => setMotion(!motionOn));
+    newQ.addEventListener("click", newQuestion);
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") renderRegion(idx + 1);
+      if (e.key === "ArrowLeft") renderRegion(idx - 1);
+    });
+
+    // ===================== init =====================
+    makeButtons();
+    setMotion(true);
+  </script>
+</body>
+</html>
